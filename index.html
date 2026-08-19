@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PearlView Dental — Paid Acquisition Dashboard</title>
+<style>
+  :root {
+    --bg: #0a0a0b;
+    --surface: #141416;
+    --surface-2: #1c1c1f;
+    --border: #2a2a2e;
+    --border-subtle: #1f1f23;
+    --text: #e8e8ec;
+    --text-muted: #8b8b96;
+    --text-dim: #5e5e6a;
+    --green: #34d399;
+    --green-bg: rgba(52, 211, 153, 0.08);
+    --red: #f87171;
+    --red-bg: rgba(248, 113, 113, 0.08);
+    --amber: #fbbf24;
+    --amber-bg: rgba(251, 191, 36, 0.08);
+    --blue: #60a5fa;
+    --forest: #2d6a4f;
+    --forest-light: #40916c;
+    --white: #ffffff;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Inter', system-ui, sans-serif;
+    font-size: 13px;
+    line-height: 1.5;
+    padding: 20px 24px;
+    min-height: 100vh;
+  }
+
+  /* Header */
+  .header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .header h1 {
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--white);
+  }
+  .header h1 span {
+    color: var(--forest-light);
+  }
+  .header .meta {
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  /* Verdict Banner */
+  .verdict {
+    padding: 12px 16px;
+    margin: 12px 0 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    line-height: 1.5;
+    font-weight: 500;
+  }
+  .verdict.awaiting {
+    background: var(--amber-bg);
+    border: 1px solid rgba(251, 191, 36, 0.2);
+    color: var(--amber);
+  }
+  .verdict.healthy {
+    background: var(--green-bg);
+    border: 1px solid rgba(52, 211, 153, 0.2);
+    color: var(--green);
+  }
+  .verdict.alert {
+    background: var(--red-bg);
+    border: 1px solid rgba(248, 113, 113, 0.2);
+    color: var(--red);
+  }
+
+  /* Section */
+  .section {
+    margin-bottom: 20px;
+  }
+  .section-title {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+  }
+
+  /* Config Drift Traffic Lights */
+  .drift-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .drift-item {
+    background: var(--surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    padding: 10px 12px;
+    text-align: center;
+  }
+  .drift-item .indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-bottom: 4px;
+  }
+  .drift-item .indicator.pass { background: var(--green); box-shadow: 0 0 6px rgba(52, 211, 153, 0.4); }
+  .drift-item .indicator.fail { background: var(--red); box-shadow: 0 0 6px rgba(248, 113, 113, 0.4); }
+  .drift-item .indicator.unknown { background: var(--text-dim); }
+  .drift-item .label {
+    font-size: 10px;
+    color: var(--text-muted);
+    display: block;
+    margin-top: 2px;
+  }
+
+  /* Metric Tiles */
+  .tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 8px;
+  }
+  .tile {
+    background: var(--surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    padding: 12px 14px;
+  }
+  .tile .tile-label {
+    font-size: 10px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 4px;
+  }
+  .tile .tile-value {
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--white);
+    font-variant-numeric: tabular-nums;
+  }
+  .tile .tile-sub {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 2px;
+    font-variant-numeric: tabular-nums;
+  }
+  .tile .tile-sub .up { color: var(--green); }
+  .tile .tile-sub .down { color: var(--red); }
+  .tile .tile-sub .flat { color: var(--text-dim); }
+  .tile .tile-sub .variance { 
+    color: var(--text-dim);
+    font-style: italic;
+  }
+
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-variant-numeric: tabular-nums;
+  }
+  th {
+    text-align: left;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-dim);
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  th.right, td.right { text-align: right; }
+  td {
+    padding: 8px 10px;
+    font-size: 12px;
+    border-bottom: 1px solid var(--border-subtle);
+    color: var(--text);
+  }
+  tr:last-child td { border-bottom: none; }
+  .table-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  /* Quality Score badges */
+  .qs-badge {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .qs-good { background: var(--green-bg); color: var(--green); }
+  .qs-mid { background: var(--amber-bg); color: var(--amber); }
+  .qs-bad { background: var(--red-bg); color: var(--red); }
+  .qs-na { color: var(--text-dim); }
+
+  /* Component badges */
+  .comp { font-size: 10px; padding: 1px 5px; border-radius: 3px; }
+  .comp-above { background: var(--green-bg); color: var(--green); }
+  .comp-avg { background: var(--amber-bg); color: var(--amber); }
+  .comp-below { background: var(--red-bg); color: var(--red); }
+
+  /* Open Items */
+  .open-items {
+    background: var(--surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    padding: 12px 14px;
+  }
+  .open-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 6px 0;
+    font-size: 12px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .open-item:last-child { border-bottom: none; }
+  .item-status {
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-weight: 600;
+    white-space: nowrap;
+    margin-top: 1px;
+  }
+  .status-open { background: var(--amber-bg); color: var(--amber); }
+  .status-blocked { background: var(--red-bg); color: var(--red); }
+  .status-done { background: var(--green-bg); color: var(--green); }
+
+  /* Command Bar */
+  .command-bar {
+    display: flex;
+    gap: 8px;
+    margin: 16px 0;
+    flex-wrap: wrap;
+  }
+  .cmd-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 14px;
+    color: var(--text);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s ease;
+    font-family: inherit;
+  }
+  .cmd-btn:hover {
+    background: var(--surface-2);
+    border-color: var(--forest-light);
+    color: var(--white);
+  }
+  .cmd-btn:active {
+    transform: scale(0.97);
+  }
+  .cmd-btn .cmd-icon {
+    font-size: 14px;
+    line-height: 1;
+  }
+  .cmd-btn.primary {
+    background: var(--forest);
+    border-color: var(--forest-light);
+    color: var(--white);
+  }
+  .cmd-btn.primary:hover {
+    background: var(--forest-light);
+  }
+  .cmd-btn.alert-btn {
+    border-color: rgba(248, 113, 113, 0.3);
+  }
+  .cmd-btn.alert-btn:hover {
+    border-color: var(--red);
+    color: var(--red);
+  }
+  .cmd-sep {
+    width: 1px;
+    background: var(--border-subtle);
+    align-self: stretch;
+    margin: 0 4px;
+  }
+
+  /* Footer */
+  .footer {
+    margin-top: 24px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-subtle);
+    font-size: 10px;
+    color: var(--text-dim);
+    display: flex;
+    justify-content: space-between;
+  }
+
+  /* Data gap marker */
+  .gap {
+    color: var(--text-dim);
+    font-style: italic;
+    font-size: 11px;
+  }
+
+  /* Scrollable table on mobile */
+  @media (max-width: 768px) {
+    .drift-grid { grid-template-columns: repeat(2, 1fr); }
+    .tiles { grid-template-columns: repeat(2, 1fr); }
+    .table-scroll { overflow-x: auto; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1><span>●</span> PearlView Dental — Paid Acquisition</h1>
+  <div class="meta">Last updated: <span id="lastUpdated">Awaiting first data pull</span></div>
+</div>
+
+<!-- VERDICT -->
+<div class="verdict awaiting" id="verdict">
+  ⏳ <strong>Awaiting API connection.</strong> Google Ads API setup in progress. No live data yet — dashboard will populate on first automated pull.
+</div>
+
+<!-- COMMAND BAR -->
+<div class="command-bar">
+  <button class="cmd-btn primary" data-hermes-send="Run a full morning brief now — pull all data, read the vault, do the complete §6 morning analysis, and update the dashboard.">
+    <span class="cmd-icon">📊</span> Run Morning Brief
+  </button>
+  <button class="cmd-btn" data-hermes-send="Run a quick pacing check — §6 evening run. Budget pacing, any spikes, any disapprovals or status changes. 3-6 bullets or 'pacing normal'.">
+    <span class="cmd-icon">⚡</span> Pacing Check
+  </button>
+  <div class="cmd-sep"></div>
+  <button class="cmd-btn" data-hermes-send="Pull fresh Google Ads data for the clean window (Aug 11 onward) and update the dashboard with the latest numbers. Show me what changed.">
+    <span class="cmd-icon">🔄</span> Refresh Data
+  </button>
+  <button class="cmd-btn" data-hermes-send="Run an R5 config drift check right now — verify Presence-only targeting, Auto-apply OFF, Manual CPC active, daily budget $85. Report pass/fail on each.">
+    <span class="cmd-icon">🔒</span> Check Config
+  </button>
+  <button class="cmd-btn" data-hermes-send="Show me the current open items and action queue. What's blocked, what's ready to execute, what's been done since the last audit?">
+    <span class="cmd-icon">📋</span> Open Items
+  </button>
+  <div class="cmd-sep"></div>
+  <button class="cmd-btn" data-hermes-send="Run a competitive analysis — auction insights, new entrants in the Fox Valley dental corridor, any CPC or impression share shifts. Use web search for what the account data can't show.">
+    <span class="cmd-icon">🔍</span> Competitive Scout
+  </button>
+  <button class="cmd-btn" data-hermes-send="Give me the geo read — performance breakdown by market tier (North Aurora, Aurora, Montgomery, paused towns). Is the North Aurora keyword set serving now? How's the LP experience gradient?">
+    <span class="cmd-icon">📍</span> Geo Analysis
+  </button>
+  <button class="cmd-btn" data-hermes-send="Give me the creative and copy analysis — Expected CTR status on all keywords, ad-level performance, specific headline/description rewrites per city, ready to paste into Google Ads.">
+    <span class="cmd-icon">✏️</span> Copy Analysis
+  </button>
+  <div class="cmd-sep"></div>
+  <button class="cmd-btn alert-btn" data-hermes-send="Run a conversion integrity audit — check all conversion actions, dedup settings, whether the 60-sec call rule survived, whether any page-view or GA4 events crept back to Primary. Give me a clean/contaminated/unknown verdict.">
+    <span class="cmd-icon">🚨</span> Audit Conversions
+  </button>
+</div>
+
+<!-- CONFIG DRIFT (R5) -->
+<div class="section">
+  <div class="section-title">Config Drift — R5 Check</div>
+  <div class="drift-grid">
+    <div class="drift-item">
+      <div class="indicator unknown"></div>
+      <span class="label">Presence-only</span>
+    </div>
+    <div class="drift-item">
+      <div class="indicator unknown"></div>
+      <span class="label">Auto-apply OFF</span>
+    </div>
+    <div class="drift-item">
+      <div class="indicator unknown"></div>
+      <span class="label">Manual CPC</span>
+    </div>
+    <div class="drift-item">
+      <div class="indicator unknown"></div>
+      <span class="label">Budget $85/day</span>
+    </div>
+  </div>
+</div>
+
+<!-- PERFORMANCE TILES -->
+<div class="section">
+  <div class="section-title">Performance — 7-Day Rolling</div>
+  <div class="tiles">
+    <div class="tile">
+      <div class="tile-label">Daily Spend</div>
+      <div class="tile-value gap">—</div>
+      <div class="tile-sub"><span class="variance">awaiting data</span></div>
+    </div>
+    <div class="tile">
+      <div class="tile-label">Budget Util.</div>
+      <div class="tile-value gap">—</div>
+      <div class="tile-sub">of $85.00/day</div>
+    </div>
+    <div class="tile">
+      <div class="tile-label">CTR</div>
+      <div class="tile-value gap">—</div>
+      <div class="tile-sub"><span class="variance">awaiting data</span></div>
+    </div>
+    <div class="tile">
+      <div class="tile-label">Avg CPC</div>
+      <div class="tile-value gap">—</div>
+      <div class="tile-sub"><span class="variance">awaiting data</span></div>
+    </div>
+    <div class="tile">
+      <div class="tile-label">Clicks/Day</div>
+      <div class="tile-value gap">—</div>
+      <div class="tile-sub"><span class="variance">awaiting data</span></div>
+    </div>
+    <div class="tile">
+      <div class="tile-label">Conversions</div>
+      <div class="tile-value gap">—</div>
+      <div class="tile-sub"><span class="variance">clean window only</span></div>
+    </div>
+    <div class="tile">
+      <div class="tile-label">Cost/Conv</div>
+      <div class="tile-value gap">—</div>
+      <div class="tile-sub"><span class="variance">integrity-gated</span></div>
+    </div>
+    <div class="tile">
+      <div class="tile-label">Impr. Share</div>
+      <div class="tile-value gap">—</div>
+      <div class="tile-sub"><span class="variance">columns pending</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- GEO TIER TABLE -->
+<div class="section">
+  <div class="section-title">Geographic Performance by Market Tier</div>
+  <div class="table-wrap">
+    <div class="table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th>Tier</th>
+          <th>Market</th>
+          <th class="right">Spend</th>
+          <th class="right">Clicks</th>
+          <th class="right">CTR</th>
+          <th class="right">CPC</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="geoTable">
+        <tr>
+          <td>Core</td>
+          <td>North Aurora 60542</td>
+          <td class="right">$108</td>
+          <td class="right">20</td>
+          <td class="right">5.24%</td>
+          <td class="right">$5.41</td>
+          <td><span class="comp comp-above">Serving @ $9</span></td>
+        </tr>
+        <tr>
+          <td>Core</td>
+          <td>Aurora 60505/06</td>
+          <td class="right">$736</td>
+          <td class="right">127</td>
+          <td class="right">4.90%</td>
+          <td class="right">$5.80</td>
+          <td><span class="comp comp-avg">Active — copy needs split</span></td>
+        </tr>
+        <tr>
+          <td>Core</td>
+          <td>Montgomery 60538</td>
+          <td class="right">$29</td>
+          <td class="right">5</td>
+          <td class="right">4.24%</td>
+          <td class="right">$5.89</td>
+          <td><span class="comp comp-below">Paused (tactical)</span></td>
+        </tr>
+        <tr>
+          <td>Paused</td>
+          <td>Oswego</td>
+          <td class="right">$122</td>
+          <td class="right">21</td>
+          <td class="right">5.48%</td>
+          <td class="right">$5.80</td>
+          <td><span class="comp comp-below">Paused — QS 2/10</span></td>
+        </tr>
+        <tr>
+          <td>Paused</td>
+          <td>Batavia</td>
+          <td class="right">$64</td>
+          <td class="right">11</td>
+          <td class="right">5.39%</td>
+          <td class="right">$5.80</td>
+          <td><span class="comp comp-below">Paused — QS 1/10</span></td>
+        </tr>
+        <tr>
+          <td>Paused</td>
+          <td>Geneva</td>
+          <td class="right">$47</td>
+          <td class="right">8</td>
+          <td class="right">2.67%</td>
+          <td class="right">$5.82</td>
+          <td><span class="comp comp-below">Paused — QS 1/10</span></td>
+        </tr>
+        <tr>
+          <td>Paused</td>
+          <td>Sugar Grove</td>
+          <td class="right">$6</td>
+          <td class="right">1</td>
+          <td class="right">1.37%</td>
+          <td class="right">$5.82</td>
+          <td><span class="comp comp-below">Paused — QS 1/10</span></td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+  <div style="font-size: 10px; color: var(--text-dim); margin-top: 4px;">
+    Data: Aug 1–18 (last audit). Will refresh from clean window on API connect.
+  </div>
+</div>
+
+<!-- QUALITY SCORE TRACKER -->
+<div class="section">
+  <div class="section-title">Quality Score Components — The Real Scoreboard</div>
+  <div class="table-wrap">
+    <div class="table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th>Keyword</th>
+          <th class="right">QS</th>
+          <th>Exp. CTR</th>
+          <th>Ad Relevance</th>
+          <th>LP Experience</th>
+          <th class="right">CTR</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>"dentist north aurora"</td>
+          <td class="right"><span class="qs-badge qs-good">7</span></td>
+          <td><span class="comp comp-below">Below</span></td>
+          <td><span class="comp comp-above">Above</span></td>
+          <td><span class="comp comp-above">Above</span></td>
+          <td class="right">4.67%</td>
+        </tr>
+        <tr>
+          <td>[dentist north aurora]</td>
+          <td class="right"><span class="qs-badge qs-good">7</span></td>
+          <td><span class="comp comp-below">Below</span></td>
+          <td><span class="comp comp-above">Above</span></td>
+          <td><span class="comp comp-above">Above</span></td>
+          <td class="right">6.25%</td>
+        </tr>
+        <tr>
+          <td>"dentist aurora il"</td>
+          <td class="right"><span class="qs-badge qs-mid">4</span></td>
+          <td><span class="comp comp-below">Below</span></td>
+          <td><span class="comp comp-avg">Avg</span></td>
+          <td><span class="comp comp-avg">Avg</span></td>
+          <td class="right">5.67%</td>
+        </tr>
+        <tr>
+          <td>"family dentist aurora"</td>
+          <td class="right"><span class="qs-badge qs-bad">3</span></td>
+          <td><span class="comp comp-below">Below</span></td>
+          <td><span class="comp comp-above">Above</span></td>
+          <td><span class="comp comp-below">Below</span></td>
+          <td class="right">5.14%</td>
+        </tr>
+        <tr>
+          <td>[dentist aurora il]</td>
+          <td class="right"><span class="qs-badge qs-mid">4</span></td>
+          <td><span class="comp comp-below">Below</span></td>
+          <td><span class="comp comp-avg">Avg</span></td>
+          <td><span class="comp comp-avg">Avg</span></td>
+          <td class="right">3.42%</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+  <div style="font-size: 10px; color: var(--text-dim); margin-top: 4px;">
+    Expected CTR "Below average" on 8/8 scored keywords → ad copy is the binding constraint. Paused keywords (Oswego, Batavia, Geneva, Sugar Grove) omitted.
+  </div>
+</div>
+
+<!-- OPEN ITEMS -->
+<div class="section">
+  <div class="section-title">Open Items — Action Queue</div>
+  <div class="open-items">
+    <div class="open-item">
+      <span class="item-status status-blocked">BLOCKED</span>
+      <span>Re-pull metrics Aug 11–18 (clean window only) — needs API access</span>
+    </div>
+    <div class="open-item">
+      <span class="item-status status-blocked">BLOCKED</span>
+      <span>Verify conversion actions — 60-sec call rule survived? No page-view events crept back?</span>
+    </div>
+    <div class="open-item">
+      <span class="item-status status-open">OPEN</span>
+      <span>Add impression share columns (Search impr. share, Lost IS rank, Lost IS budget)</span>
+    </div>
+    <div class="open-item">
+      <span class="item-status status-open">OPEN</span>
+      <span>Pause outlying keywords: Oswego, Batavia, Geneva, Montgomery, Sugar Grove (~$15/day freed)</span>
+    </div>
+    <div class="open-item">
+      <span class="item-status status-open">OPEN</span>
+      <span>Pause [dentist aurora il] — exact match underperforms phrase twin</span>
+    </div>
+    <div class="open-item">
+      <span class="item-status status-open">OPEN</span>
+      <span>Add negative keyword list (employment, education, DIY, vet, "cheap", "free dental care")</span>
+    </div>
+    <div class="open-item">
+      <span class="item-status status-open">OPEN</span>
+      <span>Split Ad Group 1 → North Aurora / Aurora with per-city ad copy (highest-leverage fix)</span>
+    </div>
+    <div class="open-item">
+      <span class="item-status status-open">OPEN</span>
+      <span>Build Emergency ad group at $9 tier</span>
+    </div>
+    <div class="open-item">
+      <span class="item-status status-open">OPEN</span>
+      <span>Raise North Aurora keywords $6→$9 (Geo-Core tier approved 8/18)</span>
+    </div>
+    <div class="open-item">
+      <span class="item-status status-open">OPEN</span>
+      <span>Spanish-language ad group for 60505/60506 — pending decision</span>
+    </div>
+    <div class="open-item">
+      <span class="item-status status-open">OPEN</span>
+      <span>Meta Ads status — confirm if FB Implant / FB New Leads still running</span>
+    </div>
+  </div>
+</div>
+
+<!-- CLEAN DATA WINDOW -->
+<div class="section">
+  <div class="section-title">Data Integrity</div>
+  <div style="background: var(--surface); border: 1px solid var(--border-subtle); border-radius: 6px; padding: 12px 14px;">
+    <div style="display: flex; gap: 24px; flex-wrap: wrap; font-size: 12px;">
+      <div>
+        <span style="color: var(--text-dim);">Clean window start:</span>
+        <span style="color: var(--green); font-weight: 600;">Aug 11, 2026</span>
+      </div>
+      <div>
+        <span style="color: var(--text-dim);">Clean conversions to date:</span>
+        <span style="color: var(--amber); font-weight: 600;">Unknown — re-pull needed</span>
+      </div>
+      <div>
+        <span style="color: var(--text-dim);">Smart Bidding unlock:</span>
+        <span style="color: var(--text-muted);">15 clean conversions (Manual CPC until then)</span>
+      </div>
+      <div>
+        <span style="color: var(--text-dim);">Contaminated window:</span>
+        <span style="color: var(--red);">Pre-Aug 11 — never compare or report</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  <span>PearlView Dental · North Aurora, IL 60542 · (630) 859-8660</span>
+  <span>Dashboard v1.0 · Updated by Triage Orchestrator</span>
+</div>
+
+</body>
+</html>
